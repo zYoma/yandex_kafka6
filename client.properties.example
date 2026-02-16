@@ -1,0 +1,17 @@
+# Kafka Client Configuration
+# Обновите параметры безопасности в соответствии с вашими настройками
+security.protocol=SASL_SSL
+sasl.mechanism=SCRAM-SHA-512
+
+# Обновите данные пользователя
+sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=admin password=" REPLACE_WITH_YOUR_PASSWORD ";
+
+# Доверенные сертификаты (для TLS)
+ssl.truststore.location=/tmp/kafka.truststore.jks
+ssl.truststore.password=changeme
+
+# Или отключить проверку SSL (только для тестирования, не использовать в production!)
+# ssl.endpoint.identification.algorithm=
+
+# Bootstrap servers - замените на реальные значения из консоли Yandex
+# bootstrap.servers=<host-1>:<port-1>,<host-2>:<port-2>,<host-3>:<port-3>

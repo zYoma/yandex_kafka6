@@ -1,0 +1,28 @@
+
+services:
+  
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    command: ["/app/yandex-kafka producer"]
+    env_file: ./.env
+    networks:
+      - kafka-network
+  
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    command: ["/app/yandex-kafka-consumer consumer"]
+    env_file: ./.env
+    environment:
+      - GROUP_ID=test-group
+    networks:
+      - kafka-network
+
+networks:
+  kafka-network:
+    driver: bridge

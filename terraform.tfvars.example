@@ -1,0 +1,8 @@
+# Пример файла переменных
+# Скопируйте в terraform.tfvars и заполните своими значениями
+
+folder_id           = "b1g...your_folder_id"
+zone                = "ru-central1-a"
+kafka_user          = "admin"
+kafka_password      = "YourStrongPassword123!"
+ssh_public_key_path = "~/.ssh/yandex_cloud.pub"

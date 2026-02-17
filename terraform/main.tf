@@ -175,6 +175,16 @@ resource "yandex_vpc_security_group_rule" "allow_hdfs_from_my_ip" {
   v4_cidr_blocks = ["0.0.0.0/0"]
 }
 
+resource "yandex_vpc_security_group_rule" "allow_ssh_from_my_ip" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow SSH from my IP"
+
+  port           = 22
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
+
 
 ############################
 # Kafka Cluster
@@ -322,23 +332,4 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
   }
 
 
-}
-
-resource "null_resource" "hdfs_setup" {
-  depends_on = [yandex_dataproc_cluster.hadoop_cluster]
-
-  connection {
-    type        = "ssh"
-    host        = "rc1a-dataproc-m-jj64g0d4bst9o9q6.mdb.yandexcloud.net"
-    user        = "yc-user"
-    private_key = file("~/.ssh/terraform-dataproc")
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "export HADOOP_USER_NAME=hdfs",
-      "hdfs dfs -mkdir -p /kafka_data",
-      "hdfs dfs -chmod 777 /kafka_data"
-    ]
-  }
 }

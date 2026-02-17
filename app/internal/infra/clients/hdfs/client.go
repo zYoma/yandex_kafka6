@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"path"
 	"strings"
 	"time"
 
@@ -27,7 +28,7 @@ type HDFSWriterConfig struct {
 func NewHDFSWriter(cfg *HDFSWriterConfig) (*HDFSWriter, error) {
 	client, err := hdfs.NewClient(hdfs.ClientOptions{
 		Addresses: strings.Split(cfg.Addresses, ","),
-		User:      "hadoop", // <- здесь указываем существующего пользователя HDFS
+		User:      "hadoop",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при создании клиента HDFS: %w", err)
@@ -51,14 +52,21 @@ func NewHDFSWriter(cfg *HDFSWriterConfig) (*HDFSWriter, error) {
 	}, nil
 }
 
-func (w *HDFSWriter) WriteProductBatch(ctx context.Context, products []interfaces.Product, filename string) error {
+func (w *HDFSWriter) WriteProductBatch(ctx context.Context, products []interfaces.Product, batchName string) error {
 	if len(products) == 0 {
 		logger.Get().Sugar().Warn("Пустой список продуктов для записи в HDFS")
 		return nil
 	}
 
+	// Создаём директорию батча
+	batchDir := path.Join(w.basePath, batchName)
+	if err := w.client.MkdirAll(batchDir, 0777); err != nil {
+		return fmt.Errorf("не удалось создать директорию %s в HDFS: %w", batchDir, err)
+	}
+
+	// Формируем имя файла
 	timestamp := time.Now().Format("20060102_150405_000")
-	fullFilename := fmt.Sprintf("%s/kafka_data_%s.csv", filename, timestamp)
+	fullFilename := path.Join(batchDir, fmt.Sprintf("kafka_data_%s.csv", timestamp))
 
 	var csvBuilder strings.Builder
 	writer := csv.NewWriter(&csvBuilder)
@@ -79,7 +87,7 @@ func (w *HDFSWriter) WriteProductBatch(ctx context.Context, products []interface
 
 	csvData := csvBuilder.String()
 
-	file, err := w.client.CreateFile(fullFilename, 1, time.Now().UnixMilli(), 0644)
+	file, err := w.client.Create(fullFilename)
 	if err != nil {
 		return fmt.Errorf("ошибка при создании файла %s в HDFS: %w", fullFilename, err)
 	}

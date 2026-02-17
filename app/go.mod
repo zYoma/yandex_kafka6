@@ -7,6 +7,7 @@ require (
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/confluentinc/confluent-kafka-go/v2 v2.12.0
+	github.com/google/uuid v1.6.0
 	github.com/invopop/jsonschema v0.12.0
 	go.uber.org/zap v1.27.1
 )

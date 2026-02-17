@@ -58,15 +58,15 @@ func (w *HDFSWriter) WriteProductBatch(ctx context.Context, products []interface
 		return nil
 	}
 
-	// Создаём директорию батча
 	batchDir := path.Join(w.basePath, batchName)
+	logger.Get().Sugar().Infof("Создание директории батча: %s", batchDir)
 	if err := w.client.MkdirAll(batchDir, 0777); err != nil {
 		return fmt.Errorf("не удалось создать директорию %s в HDFS: %w", batchDir, err)
 	}
 
-	// Формируем имя файла
 	timestamp := time.Now().Format("20060102_150405_000")
 	fullFilename := path.Join(batchDir, fmt.Sprintf("kafka_data_%s.csv", timestamp))
+	logger.Get().Sugar().Infof("Создание файла: %s", fullFilename)
 
 	var csvBuilder strings.Builder
 	writer := csv.NewWriter(&csvBuilder)
@@ -86,16 +86,24 @@ func (w *HDFSWriter) WriteProductBatch(ctx context.Context, products []interface
 	}
 
 	csvData := csvBuilder.String()
+	logger.Get().Sugar().Infof("CSV данные: %d байт", len(csvData))
 
+	logger.Get().Sugar().Infof("Открытие файла на запись...")
 	file, err := w.client.Create(fullFilename)
 	if err != nil {
 		return fmt.Errorf("ошибка при создании файла %s в HDFS: %w", fullFilename, err)
 	}
 	defer file.Close()
 
+	logger.Get().Sugar().Infof("Запись %d байт в файл...", len(csvData))
 	_, err = file.Write([]byte(csvData))
 	if err != nil {
 		return fmt.Errorf("ошибка при записи данных в файл %s: %w", fullFilename, err)
+	}
+
+	logger.Get().Sugar().Infof("Завершение записи...")
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("ошибка при закрытии файла: %w", err)
 	}
 
 	logger.Get().Sugar().Infof("Успешно записано %d продуктов в HDFS: %s", len(products), fullFilename)

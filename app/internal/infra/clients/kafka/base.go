@@ -15,8 +15,14 @@ import (
 
 // SchemaMigration мигрицая схемы в Schema Registry
 func SchemaMigration(cfg *config.Config) (*jsSchema.Serializer, *jsSchema.Deserializer, error) {
-	// Конфигурация для Schema Registry
-	srClient, err := schemaregistry.NewClient(schemaregistry.NewConfig(cfg.SchemaRegistryServiceURL))
+	var srConfig *schemaregistry.Config
+	if cfg.UseSSL {
+		srConfig = schemaregistry.NewConfigWithAuthentication(cfg.SchemaRegistryServiceURL, cfg.SASLUsername, cfg.SASLPassword)
+	} else {
+		srConfig = schemaregistry.NewConfig(cfg.SchemaRegistryServiceURL)
+	}
+
+	srClient, err := schemaregistry.NewClient(srConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("ошибка при создании клиента Schema Registry: %w", err)
 	}

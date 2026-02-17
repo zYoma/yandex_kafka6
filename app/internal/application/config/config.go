@@ -25,6 +25,16 @@ type Config struct {
 	MaxPollIntervalMS        int    `env:"MAX_POLL_INTERVAL_MS" envDefault:"300000"`
 	SchemaRegistryServiceURL string `env:"SCHEMA_REGISTRY_SERVICE_URL" envDefault:"http://schema-registry:8081"`
 	SingleMessageConsumer    bool   `env:"ENABLE_SINGLE_MESSAGE_CONSUMER" envDefault:"true"`
+
+	UseSSL        bool   `env:"USE_SSL" envDefault:"false"`
+	SASLUsername  string `env:"SASL_USERNAME" envDefault:"admin"`
+	SASLPassword  string `env:"SASL_PASSWORD" envDefault:""`
+	SSLCALocation string `env:"SSL_CA_LOCATION" envDefault:"/certs/ca.crt"`
+
+	HadoopHDFSMode     bool   `env:"HADOOP_HDFS_MODE" envDefault:"false"`
+	HDFSHDFSAddresses  string `env:"HDFS_ADDRESSES" envDefault:"namenode:9000"`
+	HDFSKafkaDataPath  string `env:"HDFS_KAFKA_DATA_PATH" envDefault:"/kafka_data"`
+	DataprocMasterHost string `env:"DATAPROC_MASTER_HOST" envDefault:""`
 }
 
 // GetConfig возвращает конфигурацию приложения из переменных окружения.
@@ -38,15 +48,25 @@ func GetConfig() (*Config, error) {
 
 // GetProducerConfig возвращает конфигурацию для продюсера Kafka
 func (c *Config) GetProducerConfig() *kafka.ConfigMap {
-	return &kafka.ConfigMap{
-		"bootstrap.servers":   c.BootstrapServers,  // Адреса брокеров Kafka
-		"compression.type":    c.CompressionType,   // Тип сжатия данных (none, gzip, snappy, lz4, zstd)
-		"acks":                c.Acks,              // Уровень гарантии доставки (0, 1, all)
-		"linger.ms":           c.LingerMS,          // подержать отправку, чтобы накопить батч
-		"batch.num.messages":  c.BatchNumMessage,   // ограничение размера батча по сообщениям
-		"delivery.timeout.ms": c.DeliveryTimeoutMS, // общий таймаут доставки
-		"retries":             c.Retries,           // число ретраев при неудачной отправке
+	cfgMap := &kafka.ConfigMap{
+		"bootstrap.servers":   c.BootstrapServers,
+		"compression.type":    c.CompressionType,
+		"acks":                c.Acks,
+		"linger.ms":           c.LingerMS,
+		"batch.num.messages":  c.BatchNumMessage,
+		"delivery.timeout.ms": c.DeliveryTimeoutMS,
+		"retries":             c.Retries,
 	}
+
+	if c.UseSSL {
+		cfgMap.SetKey("security.protocol", "SASL_SSL")
+		cfgMap.SetKey("sasl.mechanism", "SCRAM-SHA-512")
+		cfgMap.SetKey("sasl.username", c.SASLUsername)
+		cfgMap.SetKey("sasl.password", c.SASLPassword)
+		cfgMap.SetKey("ssl.ca.location", c.SSLCALocation)
+	}
+
+	return cfgMap
 }
 
 // GetConsumerConfig возвращает конфигурацию для консьюмера Kafka
@@ -56,13 +76,23 @@ func (c *Config) GetConsumerConfig() *kafka.ConfigMap {
 		enableAutoCommit = true
 	}
 
-	return &kafka.ConfigMap{
-		"bootstrap.servers":    c.BootstrapServers,  // Адреса брокеров Kafka
-		"group.id":             c.GroupId,           // ID группы потребителей
-		"auto.offset.reset":    c.AutoOffsetReset,   // Политика сброса оффсетов при отсутствии сохраненных значений
-		"enable.auto.commit":   enableAutoCommit,    // Включить автоматический коммит оффсетов
-		"fetch.wait.max.ms":    c.FetchWaitMaxMS,    // Максимальное время ожидания данных при fetch запросе
-		"fetch.min.bytes":      c.FetchMinByres,     // Минимальное количество байт, которое должно быть доступно для возврата
-		"max.poll.interval.ms": c.MaxPollIntervalMS, // Максимальное время между вызовами на получение сообщений
+	cfgMap := &kafka.ConfigMap{
+		"bootstrap.servers":    c.BootstrapServers,
+		"group.id":             c.GroupId,
+		"auto.offset.reset":    c.AutoOffsetReset,
+		"enable.auto.commit":   enableAutoCommit,
+		"fetch.wait.max.ms":    c.FetchWaitMaxMS,
+		"fetch.min.bytes":      c.FetchMinByres,
+		"max.poll.interval.ms": c.MaxPollIntervalMS,
 	}
+
+	if c.UseSSL {
+		cfgMap.SetKey("security.protocol", "SASL_SSL")
+		cfgMap.SetKey("sasl.mechanism", "SCRAM-SHA-512")
+		cfgMap.SetKey("sasl.username", c.SASLUsername)
+		cfgMap.SetKey("sasl.password", c.SASLPassword)
+		cfgMap.SetKey("ssl.ca.location", c.SSLCALocation)
+	}
+
+	return cfgMap
 }

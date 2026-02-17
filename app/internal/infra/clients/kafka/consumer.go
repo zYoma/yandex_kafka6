@@ -9,6 +9,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/zYoma/yandex_kafka/internal/application"
 	"github.com/zYoma/yandex_kafka/internal/application/config"
+	"github.com/zYoma/yandex_kafka/internal/application/interfaces"
 	"github.com/zYoma/yandex_kafka/internal/domain"
 	"github.com/zYoma/yandex_kafka/internal/logger"
 )
@@ -25,6 +26,7 @@ type KafkaConsumer struct {
 	Consumer     *kafka.Consumer
 	Deserializer *jsonschema.Deserializer
 	Config       *config.Config
+	HDFSClient   interfaces.HDFSClient
 }
 
 // partitionGroup структура для группирования сообщений по партициям
@@ -35,13 +37,21 @@ type partitionGroup struct {
 
 // NewKafkaConsumer создает новый экземпляр KafkaConsumer
 func NewKafkaConsumer(deserializer *jsonschema.Deserializer, cfg *config.Config) (*KafkaConsumer, error) {
-	// Конфигурация для Kafka Consumer
 	consumer, err := kafka.NewConsumer(cfg.GetConsumerConfig())
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при создании консьюмера: %w", err)
 	}
 
-	return &KafkaConsumer{Deserializer: deserializer, Consumer: consumer, Config: cfg}, nil
+	return &KafkaConsumer{
+		Deserializer: deserializer,
+		Consumer:     consumer,
+		Config:       cfg,
+		HDFSClient:   nil,
+	}, nil
+}
+
+func (c *KafkaConsumer) SetHDFSClient(client interfaces.HDFSClient) {
+	c.HDFSClient = client
 }
 
 // Start запускает консьюмер в SingleMessage режиме.
@@ -248,10 +258,9 @@ func (c *KafkaConsumer) processPartition(ctx context.Context, tp kafka.TopicPart
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// Обработка сообщений.
 	done := make(chan bool, 1)
 	go func() {
-		done <- domain.ProcessProducts(ctx, products)
+		done <- domain.ProcessProducts(ctx, products, c.HDFSClient)
 	}()
 
 	select {

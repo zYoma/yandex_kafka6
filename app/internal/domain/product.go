@@ -3,10 +3,10 @@ package domain
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/zYoma/yandex_kafka/internal/application/interfaces"
+	"github.com/zYoma/yandex_kafka/internal/logger"
 )
 
 // Определение структуры сообщения
@@ -43,12 +43,38 @@ func GenerateProducts() []*Product {
 	return products
 }
 
-// ProcessProducts имитирует обработку списка продуктов с паузой
-func ProcessProducts(ctx context.Context, products []Product) bool {
-	// Имитация обработки с паузой
-	time.Sleep(100 * time.Millisecond)
+// ProcessProducts обрабатывает список продуктов:  запись в HDFS
+func ProcessProducts(ctx context.Context, products []Product, hdfsClient interfaces.HDFSClient) bool {
+	if hdfsClient != nil {
+		// Конвертируем []Product в []interfaces.Product для записи в HDFS
+		interfaceProducts := make([]interfaces.Product, len(products))
+		for i, p := range products {
+			interfaceProducts[i] = interfaces.Product{
+				Id:   p.Id,
+				Name: p.Name,
+			}
+		}
 
-	// Возвращаем случайное значение успеха
-	rand.Seed(time.Now().UnixNano())
-	return rand.Float32() > 0.5
+		filename := fmt.Sprintf("products_batch_%d", time.Now().Unix())
+		err := hdfsClient.WriteProductBatch(ctx, interfaceProducts, filename)
+		if err != nil {
+			logger.Get().Sugar().Errorf("Ошибка при записи в HDFS: %v", err)
+			return false
+		}
+		logger.Get().Sugar().Infof("Обработано %d продуктов, записано в HDFS", len(products))
+	}
+
+	return true
+}
+
+// ConvertDomainProductToInterfaceProduct конвертирует domain.Product в interfaces.Product
+func ConvertDomainProductToInterfaceProduct(products []Product) []interfaces.Product {
+	result := make([]interfaces.Product, len(products))
+	for i, p := range products {
+		result[i] = interfaces.Product{
+			Id:   p.Id,
+			Name: p.Name,
+		}
+	}
+	return result
 }

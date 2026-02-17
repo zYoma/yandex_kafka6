@@ -1,0 +1,99 @@
+package hdfs
+
+import (
+	"context"
+	"encoding/csv"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/colinmarc/hdfs/v2"
+	"github.com/zYoma/yandex_kafka/internal/application/interfaces"
+	"github.com/zYoma/yandex_kafka/internal/logger"
+)
+
+type HDFSWriter struct {
+	client    *hdfs.Client
+	basePath  string
+	batchSize int
+}
+
+type HDFSWriterConfig struct {
+	Addresses string
+	BasePath  string
+	BatchSize int
+}
+
+func NewHDFSWriter(cfg *HDFSWriterConfig) (*HDFSWriter, error) {
+	client, err := hdfs.New(cfg.Addresses)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при создании клиента HDFS: %w", err)
+	}
+
+	err = client.MkdirAll(cfg.BasePath, 0755)
+	if err != nil && !strings.Contains(err.Error(), "exists") {
+		client.Close()
+		return nil, fmt.Errorf("ошибка при создании директории %s: %w", cfg.BasePath, err)
+	}
+
+	batchSize := cfg.BatchSize
+	if batchSize <= 0 {
+		batchSize = 1000
+	}
+
+	return &HDFSWriter{
+		client:    client,
+		basePath:  cfg.BasePath,
+		batchSize: batchSize,
+	}, nil
+}
+
+func (w *HDFSWriter) WriteProductBatch(ctx context.Context, products []interfaces.Product, filename string) error {
+	if len(products) == 0 {
+		logger.Get().Sugar().Warn("Пустой список продуктов для записи в HDFS")
+		return nil
+	}
+
+	timestamp := time.Now().Format("20060102_150405_000")
+	fullFilename := fmt.Sprintf("%s/kafka_data_%s.csv", filename, timestamp)
+
+	var csvBuilder strings.Builder
+	writer := csv.NewWriter(&csvBuilder)
+
+	for _, product := range products {
+		record := []string{
+			fmt.Sprintf("%d", product.Id),
+			product.Name,
+		}
+		if err := writer.Write(record); err != nil {
+			return fmt.Errorf("ошибка при записи строки в CSV: %w", err)
+		}
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return fmt.Errorf("ошибка при формировании CSV: %w", err)
+	}
+
+	csvData := csvBuilder.String()
+
+	file, err := w.client.CreateFile(fullFilename, 1, time.Now().UnixMilli(), 0644)
+	if err != nil {
+		return fmt.Errorf("ошибка при создании файла %s в HDFS: %w", fullFilename, err)
+	}
+	defer file.Close()
+
+	_, err = file.Write([]byte(csvData))
+	if err != nil {
+		return fmt.Errorf("ошибка при записи данных в файл %s: %w", fullFilename, err)
+	}
+
+	logger.Get().Sugar().Infof("Успешно записано %d продуктов в HDFS: %s", len(products), fullFilename)
+	return nil
+}
+
+func (w *HDFSWriter) Close() error {
+	if w.client != nil {
+		return w.client.Close()
+	}
+	return nil
+}

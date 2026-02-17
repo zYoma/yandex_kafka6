@@ -8,45 +8,45 @@ import (
 
 	"github.com/zYoma/yandex_kafka/internal/application"
 	"github.com/zYoma/yandex_kafka/internal/application/config"
+	"github.com/zYoma/yandex_kafka/internal/infra/clients/hdfs"
 	"github.com/zYoma/yandex_kafka/internal/infra/clients/kafka"
 	"github.com/zYoma/yandex_kafka/internal/logger"
 )
 
 func main() {
-
-	// получаем конфигурацию
 	config, err := config.GetConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	// слушаем сигналы
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	// получаем десериализатор
 	_, deserializer, err := kafka.SchemaMigration(config)
 	if err != nil {
 		panic(err)
 	}
 
-	// внедряем конкретные реализации
 	consumerClient, err := kafka.NewKafkaConsumer(deserializer, config)
 	if err != nil {
 		panic(err)
 	}
 
-	// создаем приложение
-	consumer := application.NewConsumer(config, consumerClient)
+	hdfsClient, err := hdfs.NewHDFSClient(config)
+	if err != nil {
+		logger.Get().Sugar().Warnf("Не удалось создать HDFS клиент: %v. Продолжаем без HDFS.", err)
+		hdfsClient = nil
+	}
 
-	// запускаем
+	consumerClient.SetHDFSClient(hdfsClient)
+
+	consumer := application.NewConsumerWithHDFS(config, consumerClient, hdfsClient)
+
 	if err := consumer.Run(ctx); err != nil {
 		if errors.Is(err, application.ErrAppStopped) {
 			logger.Get().Info("consumer stopped")
 			return
 		}
-
 		panic(err)
 	}
-
 }

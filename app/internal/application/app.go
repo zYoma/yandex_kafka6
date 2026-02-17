@@ -21,8 +21,9 @@ type ProducerApp struct {
 
 // ConsumerApp представляет приложение консьюмер.
 type ConsumerApp struct {
-	Consumer interfaces.Consumer
-	Config   *config.Config
+	Consumer   interfaces.Consumer
+	Config     *config.Config
+	HDFSClient interfaces.HDFSClient
 }
 
 // NewProducer создаёт новое приложение продюсер с настройками из конфигурации.
@@ -41,7 +42,15 @@ func NewConsumer(cfg *config.Config, consumer interfaces.Consumer) *ConsumerApp 
 	}
 }
 
-// // Run запускает приложение продюсер.
+// NewConsumerWithHDFS создаёт новое приложение консьюмер с HDFS клиентом.
+func NewConsumerWithHDFS(cfg *config.Config, consumer interfaces.Consumer, hdfsClient interfaces.HDFSClient) *ConsumerApp {
+	return &ConsumerApp{
+		Consumer:   consumer,
+		Config:     cfg,
+		HDFSClient: hdfsClient,
+	}
+}
+
 func (p *ProducerApp) Run(ctx context.Context) error {
 	logger.Get().Info("run producer")
 	err := domain.GenerateAndSendProducts(ctx, p.Producer)
@@ -51,9 +60,8 @@ func (p *ProducerApp) Run(ctx context.Context) error {
 	return nil
 }
 
-// Run запускает приложение консьюмер.
 func (c *ConsumerApp) Run(ctx context.Context) error {
-	logger.Get().Sugar().Infof("run consumer, group_id: %v, topic: %v", c.Config.GroupId, c.Config.Topic)
+	logger.Get().Sugar().Infof("run consumer, group_id: %v, topic: %v, hdfs_enabled=%v", c.Config.GroupId, c.Config.Topic, c.HDFSClient != nil)
 	if c.Config.SingleMessageConsumer == true {
 		return c.Consumer.StartSingleMessage(ctx)
 	}

@@ -12,8 +12,22 @@ type Producer interface {
 
 // Consumer предоставляет интерфейс консьюмера.
 type Consumer interface {
-	// консюмер запускается в режиме поочередной обработки сообщений
+	// консьюмер запускается в режиме поочередной обработки сообщений
 	StartBatchMessage(ctx context.Context) error
-	// консюмер запускается в режиме пакетной обработки сообщений
+	// консьюмер запускается в режиме пакетной обработки сообщений
 	StartSingleMessage(ctx context.Context) error
+}
+
+// Product представляет продукт для записи в HDFS
+type Product struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// HDFSClient предоставляет интерфейс для работы с Hadoop HDFS.
+type HDFSClient interface {
+	// WriteProductBatch записывает список продуктов в файл в HDFS
+	WriteProductBatch(ctx context.Context, products []Product, filename string) error
+	// Close закрывает соединение с HDFS
+	Close() error
 }

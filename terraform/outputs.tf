@@ -30,11 +30,3 @@ output "dataproc_cluster_id" {
   description = "DataProc cluster ID"
   value       = yandex_dataproc_cluster.hadoop_cluster.id
 }
-
-output "dataproc_public_hosts" {
-  description = "DataProc hosts with public IP"
-  value = [
-    for h in yandex_dataproc_cluster.hadoop_cluster.host : h.name
-    if h.assign_public_ip
-  ]
-}

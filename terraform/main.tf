@@ -178,7 +178,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
       subnet_id   = yandex_vpc_subnet.subnet.id
       assign_public_ip = true
 
-      ssh_key = file("~/.ssh/terraform-dataproc.pub")
+
     }
 
     subcluster_spec {
@@ -195,7 +195,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
       subnet_id   = yandex_vpc_subnet.subnet.id
       assign_public_ip = false
 
-      ssh_key = file("~/.ssh/terraform-dataproc.pub")
+
     }
   }
 

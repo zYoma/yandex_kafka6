@@ -9,58 +9,67 @@ terraform {
 
 provider "yandex" {}
 
+############################
+# Variables
+############################
 
-########################################
+variable "folder_id" {
+  type = string
+}
+
+variable "zone" {
+  type    = string
+  default = "ru-central1-a"
+}
+
+variable "kafka_user" {
+  type = string
+}
+
+variable "kafka_password" {
+  type      = string
+  sensitive = true
+}
+
+############################
 # Locals
-########################################
+############################
 
 locals {
   folder_id = var.folder_id
   zone      = var.zone
 }
 
-########################################
+############################
 # Network
-########################################
+############################
 
-resource "yandex_vpc_network" "kafka_network" {
-  name = "kafka-network"
+resource "yandex_vpc_network" "network" {
+  name = "infra-network"
 }
 
-resource "yandex_vpc_subnet" "kafka_subnet" {
-  name           = "kafka-subnet"
+resource "yandex_vpc_subnet" "subnet" {
+  name           = "infra-subnet"
   zone           = local.zone
-  network_id     = yandex_vpc_network.kafka_network.id
+  network_id     = yandex_vpc_network.network.id
   v4_cidr_blocks = ["10.0.0.0/24"]
 }
 
-########################################
+############################
 # Security Group
-########################################
+############################
 
-resource "yandex_vpc_security_group" "kafka_sg" {
-  name       = "kafka-security-group"
-  network_id = yandex_vpc_network.kafka_network.id
+resource "yandex_vpc_security_group" "sg" {
+  name       = "infra-sg"
+  network_id = yandex_vpc_network.network.id
 
-  # внутренний трафик
   ingress {
     protocol       = "ANY"
-    description    = "Allow internal traffic"
     from_port      = 0
     to_port        = 65535
     v4_cidr_blocks = ["10.0.0.0/24"]
   }
 
-  # Kafka SSL
-  ingress {
-    protocol       = "TCP"
-    description    = "Kafka SSL"
-    from_port      = 9091
-    to_port        = 9091
-    v4_cidr_blocks = ["10.0.0.0/24"]
-  }
-
-  # SSH
   ingress {
     protocol       = "TCP"
     description    = "SSH"
@@ -69,7 +78,14 @@ resource "yandex_vpc_security_group" "kafka_sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Schema Registry (HTTPS)
+  ingress {
+    protocol       = "TCP"
+    description    = "Kafka SSL"
+    from_port      = 9091
+    to_port        = 9091
+    v4_cidr_blocks = ["10.0.0.0/24"]
+  }
+
   ingress {
     protocol       = "TCP"
     description    = "Schema Registry"
@@ -80,30 +96,26 @@ resource "yandex_vpc_security_group" "kafka_sg" {
 
   egress {
     protocol       = "ANY"
-    description    = "Allow all outbound"
     from_port      = 0
     to_port        = 65535
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
-########################################
+############################
 # Kafka Cluster
-########################################
+############################
 
 resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
   name        = "kafka-cluster"
   folder_id   = local.folder_id
   environment = "PRESTABLE"
-  network_id  = yandex_vpc_network.kafka_network.id
+  network_id  = yandex_vpc_network.network.id
 
-  security_group_ids = [
-    yandex_vpc_security_group.kafka_sg.id
-  ]
+  security_group_ids = [yandex_vpc_security_group.sg.id]
 
   config {
-    version = "3.5"
-
+    version       = "3.5"
     brokers_count = 3
     zones         = [local.zone]
 
@@ -116,9 +128,7 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
 
       kafka_config {
         compression_type    = "COMPRESSION_TYPE_GZIP"
-        log_retention_bytes = 1073741824
         log_retention_hours = 72
-        log_segment_bytes   = 1073741824
       }
     }
 
@@ -131,13 +141,12 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
   }
 }
 
-
-########################################
+############################
 # DataProc Service Account
-########################################
+############################
 
 resource "yandex_iam_service_account" "dataproc_sa" {
-  name = "dataproc-service-account"
+  name = "dataproc-sa"
 }
 
 resource "yandex_resourcemanager_folder_iam_member" "dataproc_agent" {
@@ -152,17 +161,17 @@ resource "yandex_resourcemanager_folder_iam_member" "dataproc_provisioner" {
   role      = "dataproc.provisioner"
 }
 
-########################################
+############################
 # DataProc Cluster
-########################################
+############################
 
 resource "yandex_dataproc_cluster" "hadoop_cluster" {
   name               = "hadoop-cluster"
   folder_id          = local.folder_id
-  service_account_id = yandex_iam_service_account.dataproc_sa.id
   zone_id            = local.zone
+  service_account_id = yandex_iam_service_account.dataproc_sa.id
 
-  security_group_ids = [yandex_vpc_security_group.kafka_sg.id]
+  security_group_ids = [yandex_vpc_security_group.sg.id]
 
   cluster_config {
     version_id = "2.1"
@@ -182,7 +191,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
       }
 
       hosts_count      = 1
-      subnet_id        = yandex_vpc_subnet.kafka_subnet.id
+      subnet_id        = yandex_vpc_subnet.subnet.id
       assign_public_ip = true
     }
 
@@ -197,7 +206,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
       }
 
       hosts_count      = 2
-      subnet_id        = yandex_vpc_subnet.kafka_subnet.id
+      subnet_id        = yandex_vpc_subnet.subnet.id
       assign_public_ip = false
     }
   }

@@ -323,3 +323,22 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
 
 
 }
+
+resource "null_resource" "hdfs_setup" {
+  depends_on = [yandex_dataproc_cluster.hadoop_cluster]
+
+  connection {
+    type        = "ssh"
+    host        = "rc1a-dataproc-m-jj64g0d4bst9o9q6.mdb.yandexcloud.net"
+    user        = "yc-user"
+    private_key = file("~/.ssh/terraform-dataproc")
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "export HADOOP_USER_NAME=hdfs",
+      "hdfs dfs -mkdir -p /kafka_data",
+      "hdfs dfs -chmod 777 /kafka_data"
+    ]
+  }
+}

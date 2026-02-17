@@ -212,15 +212,14 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
 }
 
 resource "yandex_mdb_kafka_topic" "test_topic" {
-  name          = "test-topic"
-  cluster_id    = yandex_mdb_kafka_cluster.kafka_cluster.id
-  partitions    = 3
+  cluster_id = yandex_mdb_kafka_cluster.kafka_cluster.id
+  name       = "test-topic"
+  partitions = 3
   replication_factor = 3
 
-  retention {
-    size   = 100000000  # в байтах
-    period = "72h"
-  }
+  retention_bytes = 1073741824   # 1 GB
+  retention_ms    = 604800000    # 7 дней в мс
+  cleanup_policy  = "delete"     # либо "compact"
 }
 
 ############################

@@ -295,10 +295,10 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
         file("~/.ssh/terraform-dataproc.pub")
       ]
       properties = {
-        "dfs.namenode.kerberos.principal" = ""
-        "dfs.data.transfer.protection"    = "authentication"
-        "hadoop.security.authentication"   = "simple"
-        "hadoop.security.authorization"    = "false"
+        "hdfs:dfs.namenode.kerberos.principal" = ""
+        "hdfs:dfs.data.transfer.protection"    = "authentication"
+        "hdfs:hadoop.security.authentication"   = "simple"
+        "hdfs:hadoop.security.authorization"    = "false"
       }
     }
 

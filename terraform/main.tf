@@ -168,9 +168,29 @@ resource "yandex_vpc_security_group_rule" "dataproc_egress_all" {
 resource "yandex_vpc_security_group_rule" "allow_hdfs_from_my_ip" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "ingress"
-  description            = "Allow HDFS RPC from my IP"
+  description            = "Allow HDFS RPC port 8020 from my IP"
 
-  port           = 8020     
+  port           = 8020
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
+
+resource "yandex_vpc_security_group_rule" "allow_hdfs_9000" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow HDFS NameNode RPC port 9000"
+
+  port           = 9000
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
+
+resource "yandex_vpc_security_group_rule" "allow_hdfs_datanode" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow HDFS DataNode transfer port"
+
+  port           = 50010
   protocol       = "TCP"
   v4_cidr_blocks = ["0.0.0.0/0"]
 }

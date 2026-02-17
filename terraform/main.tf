@@ -80,30 +80,56 @@ resource "yandex_vpc_security_group" "sg" {
 resource "yandex_vpc_security_group" "dataproc_sg" {
   name       = "dataproc-sg"
   network_id = yandex_vpc_network.network.id
+}
 
-  ingress {
-    description    = "Allow internal cluster traffic"
-    protocol       = "ANY"
-    from_port      = 0
-    to_port        = 65535
-    v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
-  }
+# правило для разрешения внутреннего трафика между узлами (ingress)
+resource "yandex_vpc_security_group_rule" "dataproc_internal_ingress" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow all internal traffic within the SG"
 
-  ingress {
-    description    = "SSH"
-    protocol       = "TCP"
-    from_port      = 22
-    to_port        = 22
-    v4_cidr_blocks = ["0.0.0.0/0"]
-  }
+  from_port              = 0
+  to_port                = 65535
+  protocol               = "ANY"
 
-  egress {
-    description    = "Allow all outbound"
-    protocol       = "ANY"
-    from_port      = 0
-    to_port        = 65535
-    v4_cidr_blocks = ["0.0.0.0/0"]
-  }
+  predefined_target      = "self_security_group"
+}
+
+# правило для разрешения исходящего внутреннего трафика (egress)
+resource "yandex_vpc_security_group_rule" "dataproc_internal_egress" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "egress"
+  description            = "Allow all internal traffic within the SG"
+
+  from_port              = 0
+  to_port                = 65535
+  protocol               = "ANY"
+
+  predefined_target      = "self_security_group"
+}
+
+# дополнительное правило, чтобы кластер мог обращаться в интернет
+resource "yandex_vpc_security_group_rule" "dataproc_egress_https" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "egress"
+  description            = "Allow outbound HTTPS"
+  
+  from_port              = 443
+  to_port                = 443
+  protocol               = "TCP"
+  v4_cidr_blocks         = ["0.0.0.0/0"]
+}
+
+# правило для NTP (time sync)
+resource "yandex_vpc_security_group_rule" "dataproc_egress_ntp" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "egress"
+  description            = "Allow NTP for time sync"
+
+  from_port              = 123
+  to_port                = 123
+  protocol               = "UDP"
+  v4_cidr_blocks         = ["0.0.0.0/0"]
 }
 
 ############################

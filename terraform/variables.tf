@@ -30,3 +30,8 @@ variable "cloud_id" {
   description = "ID облака в Yandex Cloud"
   type        = string
 }
+
+variable "yc_token" {
+  type        = string
+  description = "Yandex Cloud IAM token"
+}

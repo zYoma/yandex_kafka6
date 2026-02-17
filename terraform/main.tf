@@ -82,52 +82,52 @@ resource "yandex_vpc_security_group" "dataproc_sg" {
   network_id = yandex_vpc_network.network.id
 }
 
-# правило для разрешения внутреннего трафика между узлами (ingress)
+# Ingress: весь трафик между членами SG
 resource "yandex_vpc_security_group_rule" "dataproc_internal_ingress" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "ingress"
   description            = "Allow all internal traffic within the SG"
 
-  from_port              = 0
-  to_port                = 65535
-  protocol               = "ANY"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "ANY"
 
-  predefined_target      = "self_security_group"
+  predefined_target = "self_security_group"
 }
 
-# правило для разрешения исходящего внутреннего трафика (egress)
+# Egress: весь трафик между членами SG
 resource "yandex_vpc_security_group_rule" "dataproc_internal_egress" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "egress"
   description            = "Allow all internal traffic within the SG"
 
-  from_port              = 0
-  to_port                = 65535
-  protocol               = "ANY"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "ANY"
 
-  predefined_target      = "self_security_group"
+  predefined_target = "self_security_group"
 }
 
-# правило для исходящего HTTPS
+# Дополнительно: доступ в интернет для обновлений / HTTPS
 resource "yandex_vpc_security_group_rule" "dataproc_egress_https" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "egress"
   description            = "Allow outbound HTTPS"
 
-  protocol               = "TCP"
-  port                   = 443
-  v4_cidr_blocks         = ["0.0.0.0/0"]
+  protocol     = "TCP"
+  port         = 443
+  v4_cidr_blocks = ["0.0.0.0/0"]
 }
 
-# правило для исходящего NTP
+# NTP
 resource "yandex_vpc_security_group_rule" "dataproc_egress_ntp" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "egress"
   description            = "Allow NTP for time sync"
 
-  protocol               = "UDP"
-  port                   = 123
-  v4_cidr_blocks         = ["0.0.0.0/0"]
+  protocol       = "UDP"
+  port           = 123
+  v4_cidr_blocks = ["0.0.0.0/0"]
 }
 
 ############################
@@ -199,6 +199,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
   description = "Hadoop HDFS для интеграции с Kafka"
   service_account_id = yandex_iam_service_account.dataproc_sa.id
   zone_id = var.zone
+  security_group_ids = [yandex_vpc_security_group.dataproc_sg.id]
 
   cluster_config {
     version_id = "2.1.1"
@@ -245,5 +246,5 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
     }
   }
 
-  security_group_ids = [yandex_vpc_security_group.dataproc_sg.id]
+
 }

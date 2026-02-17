@@ -31,6 +31,7 @@ output "dataproc_cluster_id" {
   value       = yandex_dataproc_cluster.hadoop_cluster.id
 }
 
-output "master_public_ip" {
-  value = yandex_dataproc_cluster.hadoop_cluster.cluster_config[0].subcluster_spec[0].hosts[0].fqdn
+output "master_fqdn" {
+  value = yandex_dataproc_subcluster.hadoop_master[0].hosts[0].fqdn
 }
+

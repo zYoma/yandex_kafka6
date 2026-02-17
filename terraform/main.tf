@@ -236,7 +236,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
       resources {
         resource_preset_id = "s3-c2-m8"
         disk_type_id       = "network-ssd"
-        disk_size          = 100
+        disk_size          = 50
       }
 
       hosts_count = 1
@@ -253,7 +253,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
       resources {
         resource_preset_id = "s3-c2-m8"
         disk_type_id       = "network-ssd"
-        disk_size          = 200
+        disk_size          = 50
       }
 
       hosts_count = 2

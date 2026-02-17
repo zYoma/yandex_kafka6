@@ -176,6 +176,7 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
         compression_type    = "COMPRESSION_TYPE_GZIP"
         log_retention_hours = 72
       }
+      assign_public_ip = true
     }
 
     schema_registry = true

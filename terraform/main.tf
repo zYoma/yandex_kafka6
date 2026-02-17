@@ -44,11 +44,11 @@ resource "yandex_vpc_subnet" "subnet" {
 # Security Group
 ############################
 
-resource "yandex_vpc_security_group" "dataproc_sg" {
-  name       = "dataproc-sg"
+# SG для Kafka
+resource "yandex_vpc_security_group" "infra_sg" {
+  name       = "infra-sg"
   network_id = yandex_vpc_network.network.id
 
-  # Внутренний трафик между узлами DataProc
   ingress {
     description    = "Allow internal cluster traffic"
     protocol       = "ANY"
@@ -57,7 +57,36 @@ resource "yandex_vpc_security_group" "dataproc_sg" {
     v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
   }
 
-  # SSH (опционально)
+  ingress {
+    description    = "SSH"
+    protocol       = "TCP"
+    from_port      = 22
+    to_port        = 22
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description    = "Allow all outbound"
+    protocol       = "ANY"
+    from_port      = 0
+    to_port        = 65535
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# SG для DataProc
+resource "yandex_vpc_security_group" "dataproc_sg" {
+  name       = "dataproc-sg"
+  network_id = yandex_vpc_network.network.id
+
+  ingress {
+    description    = "Allow internal cluster traffic"
+    protocol       = "ANY"
+    from_port      = 0
+    to_port        = 65535
+    v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
+  }
+
   ingress {
     description    = "SSH"
     protocol       = "TCP"
@@ -76,7 +105,6 @@ resource "yandex_vpc_security_group" "dataproc_sg" {
 }
 
 
-
 ############################
 # Kafka Cluster
 ############################
@@ -87,7 +115,7 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
   environment = "PRESTABLE"
   network_id  = yandex_vpc_network.network.id
 
-  security_group_ids = [yandex_vpc_security_group.sg.id]
+  security_group_ids = [yandex_vpc_security_group.infra_sg.id]
 
   config {
     version       = "3.9"

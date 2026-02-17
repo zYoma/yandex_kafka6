@@ -195,6 +195,27 @@ resource "yandex_vpc_security_group_rule" "allow_hdfs_datanode" {
   v4_cidr_blocks = ["0.0.0.0/0"]
 }
 
+resource "yandex_vpc_security_group_rule" "allow_hdfs_datanode_ipc" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow HDFS DataNode IPC"
+
+  port           = 50020
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
+
+resource "yandex_vpc_security_group_rule" "allow_hdfs_highports" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow HDFS high ports for data transfer"
+
+  from_port      = 50000
+  to_port        = 51000
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
+
 resource "yandex_vpc_security_group_rule" "allow_ssh_from_my_ip" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "ingress"

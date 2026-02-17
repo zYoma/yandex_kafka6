@@ -220,7 +220,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
   security_group_ids = [yandex_vpc_security_group.dataproc_sg.id]
 
   cluster_config {
-    version_id = "2.1.1"
+    version_id = "2.1"
 
     hadoop {
       services = ["HDFS", "ZOOKEEPER"]

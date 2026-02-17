@@ -6,18 +6,19 @@
 
 1. **Развернуть Kafka кластер**
    ```bash
+   cd terraform
    terraform init
    terraform apply
    ```
 
-2. **Аппаратные ресурсы (в main.tf):**
+2. **Аппаратные ресурсы (в terraform/main.tf):**
    - 3 брокера (s3-c2-m8: 2 CPU, 8 GB RAM)
    - 100 GB network-ssd диск на брокер
    - Schema Registry встроенный (Managed Service)
 
 3. **Топик с 3 партициями и репликацией 3**
    - Создается автоматически: `test-topic`
-   - Параметры в `main.tf`
+   - Параметры в `terraform/main.tf`
 
 4. **Политика cleanup.policy**
    - Установлена: `delete`
@@ -34,7 +35,7 @@
    SCHEMA_URL=$(terraform output -raw schema_registry_url)
    curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
      -u admin:пароль -k \
-     --data @schemas/product.avsc \
+     --data @terraform/schemas/product.avsc \
      $SCHEMA_URL/subjects/product-value/versions
    ```
 
@@ -61,7 +62,7 @@ kafka-topics.sh --bootstrap-server <server> \
 terraform output kafka_bootstrap_servers
 
 # Пользователь: admin
-# Пароль: из terraform.tfvars
+# Пароль: из terraform/terraform.tfvars
 # Протокол: SASL_SSL
 # Механизм: SCRAM-SHA-512
 # CA сертификат: скачать из консоли Yandex

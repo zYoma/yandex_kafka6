@@ -15,7 +15,7 @@ ssh-keygen -t rsa -f ~/.ssh/yandex_cloud -N ""
 
 ## Переменные
 
-Создать файл `terraform.tfvars`:
+Создать файл `terraform/terraform.tfvars`:
 ```hcl
 folder_id           = "ваш_folder_id"
 zone                = "ru-central1-a"
@@ -26,6 +26,7 @@ ssh_public_key_path = "~/.ssh/yandex_cloud.pub"
 ## Развертывание
 
 ```bash
+cd terraform
 terraform init
 terraform apply
 ```
@@ -51,7 +52,7 @@ curl -u admin:пароль -k https://<schema_registry_host>/subjects
 ```bash
 curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
   -u admin:пароль -k \
-  --data @schemas/product.avsc \
+  --data @terraform/schemas/product.avsc \
   https://<schema_registry_host>/subjects/product-value/versions
 ```
 
@@ -127,4 +128,41 @@ hdfs dfs -put /path/to/local/file /kafka_data/
 
 # Прочитать данные
 hdfs dfs -cat /kafka_data/file
+```
+
+## Запуск продюсера и консьюмера
+
+1. **Скачать CA сертификат:**
+   Консоль -> Managed Service for Apache Kafka -> Certificates -> Скачать
+   Сохранить как `app/certs/CACerts.pem`
+
+2. **Настроить .env:**
+   ```bash
+   cd app
+   cp .env.example .env
+   # Отредактируйте BOOTSTRAP_SERVER, SCHEMA_REGISTRY_SERVICE_URL, SASL_PASSWORD
+   ```
+
+3. **Запустить продюсер:**
+   ```bash
+   docker-compose up producer
+   # или локально:
+   go run cmd/producer/main.go
+   ```
+
+4. **Запустить консьюмер:**
+   ```bash
+   docker-compose up consumer
+   # или локально:
+   go run cmd/consumer/main.go
+   ```
+
+## Schema Registry
+
+Схема для Product автоматически регистрируется при запуске продюсера.
+Subject: `test-topic-value`
+
+Проверка:
+```bash
+curl -u admin:<password> -k https://<schema_registry_url>/subjects
 ```

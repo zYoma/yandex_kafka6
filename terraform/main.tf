@@ -66,6 +66,23 @@ resource "yandex_vpc_security_group" "sg" {
   name       = "infra-sg"
   network_id = yandex_vpc_network.network.id
 
+  # Kafka
+ingress {
+  description    = "Kafka SASL_SSL"
+  protocol       = "TCP"
+  from_port      = 9091
+  to_port        = 9091
+  v4_cidr_blocks = ["0.0.0.0/0"]  # лучше ограничить своим IP
+}
+
+# Schema Registry
+ingress {
+  description    = "Schema Registry HTTPS"
+  protocol       = "TCP"
+  from_port      = 443
+  to_port        = 443
+  v4_cidr_blocks = ["0.0.0.0/0"]  # лучше ограничить своим IP
+}
   # внутренний трафик между узлами кластера
   ingress {
     description    = "Allow internal cluster traffic"

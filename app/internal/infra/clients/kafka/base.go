@@ -18,6 +18,11 @@ func SchemaMigration(cfg *config.Config) (*jsSchema.Serializer, *jsSchema.Deseri
 	var srConfig *schemaregistry.Config
 	if cfg.UseSSL {
 		srConfig = schemaregistry.NewConfigWithAuthentication(cfg.SchemaRegistryServiceURL, cfg.SASLUsername, cfg.SASLPassword)
+		// путь до CA, который подписал сертификат Schema Registry
+		srConfig.SslCaLocation = "/etc/ssl/certs/YandexInternalRootCA.pem"
+
+		// если нужно отключить валидацию имен хоста
+		srConfig.SslDisableEndpointVerification = true
 	} else {
 		srConfig = schemaregistry.NewConfig(cfg.SchemaRegistryServiceURL)
 	}

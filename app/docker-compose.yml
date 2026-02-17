@@ -10,6 +10,8 @@ services:
     env_file: ./.env
     networks:
       - kafka-network
+    volumes:
+      - /etc/ssl/certs/YandexInternalRootCA.pem:/etc/ssl/certs/YandexInternalRootCA.pem:ro
   
   consumer:
     build:
@@ -22,6 +24,8 @@ services:
       - GROUP_ID=test-group
     networks:
       - kafka-network
+    volumes:
+      - /etc/ssl/certs/YandexInternalRootCA.pem:/etc/ssl/certs/YandexInternalRootCA.pem:ro
 
 networks:
   kafka-network:

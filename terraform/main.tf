@@ -212,15 +212,27 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
 }
 
 resource "yandex_mdb_kafka_topic" "test_topic" {
-  cluster_id = yandex_mdb_kafka_cluster.kafka_cluster.id
-  name       = "test-topic"
-  partitions = 3
+  cluster_id         = yandex_mdb_kafka_cluster.kafka_cluster.id
+  name               = "test-topic"
+  partitions         = 3
   replication_factor = 3
 
-  retention_bytes = 1073741824   # 1 GB
-  retention_ms    = 604800000    # 7 дней в мс
-  cleanup_policy  = "delete"     # либо "compact"
+  topic_config {
+    cleanup_policy       = "CLEANUP_POLICY_DELETE"
+    compression_type     = "COMPRESSION_TYPE_LZ4"
+    retention_ms         = 604800000          # время хранения
+    retention_bytes      = 10737418240        # размер хранения
+    max_message_bytes    = 1048588
+    flush_messages       = 128
+    flush_ms             = 1000
+    min_insync_replicas  = 1
+    segment_bytes        = 268435456
+    delete_retention_ms  = 86400000
+    file_delete_delay_ms = 60000
+    min_compaction_lag_ms = 0
+  }
 }
+
 
 ############################
 # DataProc Service Account

@@ -21,7 +21,7 @@ fi
 RESULT=$(curl -s -w "\n%{http_code}" -X POST \
   -H "Content-Type: application/vnd.schemaregistry.v1+json" \
   -u "$SR_USER:$SR_PASSWORD" -k \
-  --data @"$SCHEMA_FILE" \
+  --data "$(jq -Rs '{schema: ., schemaType: "JSON"}' < "$SCHEMA_FILE")" \
   "$SCHEMA_REGISTRY_URL/subjects/$SUBJECT_NAME/versions")
 
 HTTP_CODE=$(echo "$RESULT" | tail -n1)

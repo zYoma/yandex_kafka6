@@ -211,6 +211,18 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
   }
 }
 
+resource "yandex_mdb_kafka_topic" "test_topic" {
+  name          = "test-topic"
+  cluster_id    = yandex_mdb_kafka_cluster.kafka_cluster.id
+  partitions    = 3
+  replication_factor = 3
+
+  retention {
+    size   = 100000000  # в байтах
+    period = "72h"
+  }
+}
+
 ############################
 # DataProc Service Account
 ############################

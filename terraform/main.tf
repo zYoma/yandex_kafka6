@@ -101,45 +101,36 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
     yandex_vpc_security_group.kafka_sg.id
   ]
 
-  kafka {
-    resources {
-      resource_preset_id = "s3-c2-m8"
-      disk_size          = 100
-      disk_type_id       = "network-ssd"
+  config {
+    version = "3.5"
+
+    brokers_count = 3
+    zones         = [local.zone]
+
+    kafka {
+      resources {
+        resource_preset_id = "s3-c2-m8"
+        disk_size          = 100
+        disk_type_id       = "network-ssd"
+      }
+
+      kafka_config {
+        compression_type    = "COMPRESSION_TYPE_GZIP"
+        log_retention_bytes = 1073741824
+        log_retention_hours = 72
+        log_segment_bytes   = 1073741824
+      }
     }
 
-    config {
-      compression_type    = "gzip"
-      log_retention_bytes = 1073741824
-      log_retention_hours = 72
-      log_segment_bytes   = 1073741824
-    }
+    schema_registry = true
   }
-
-  schema_registry {
-    enabled = true
-  }
-
-  zones         = [local.zone]
-  brokers_count = 3
 
   user {
     name     = var.kafka_user
     password = var.kafka_password
   }
-
-  topic {
-    name               = "test-topic"
-    partitions         = 3
-    replication_factor = 3
-
-    topic_config {
-      cleanup_policy = "delete"
-      retention_ms   = 259200000
-      segment_bytes  = 1073741824
-    }
-  }
 }
+
 
 ########################################
 # DataProc Service Account
@@ -166,22 +157,22 @@ resource "yandex_resourcemanager_folder_iam_member" "dataproc_provisioner" {
 ########################################
 
 resource "yandex_dataproc_cluster" "hadoop_cluster" {
-  name                = "hadoop-cluster"
-  folder_id           = local.folder_id
-  description         = "Hadoop HDFS для интеграции с Kafka"
-  service_account_id  = yandex_iam_service_account.dataproc_sa.id
-  zone_id             = local.zone
-  security_group_ids  = [yandex_vpc_security_group.kafka_sg.id]
+  name               = "hadoop-cluster"
+  folder_id          = local.folder_id
+  service_account_id = yandex_iam_service_account.dataproc_sa.id
+  zone_id            = local.zone
 
-  config {
-    version_id = "2.1.1"
+  security_group_ids = [yandex_vpc_security_group.kafka_sg.id]
+
+  cluster_config {
+    version_id = "2.1"
 
     hadoop {
       services = ["HDFS", "ZOOKEEPER"]
     }
 
     subcluster_spec {
-      name = "subcluster-master"
+      name = "master"
       role = "MASTERNODE"
 
       resources {
@@ -190,13 +181,13 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
         disk_size          = 100
       }
 
-      hosts_count = 1
-      subnet_id   = yandex_vpc_subnet.kafka_subnet.id
+      hosts_count      = 1
+      subnet_id        = yandex_vpc_subnet.kafka_subnet.id
       assign_public_ip = true
     }
 
     subcluster_spec {
-      name = "subcluster-worker"
+      name = "worker"
       role = "DATANODE"
 
       resources {
@@ -205,8 +196,8 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
         disk_size          = 200
       }
 
-      hosts_count = 2
-      subnet_id   = yandex_vpc_subnet.kafka_subnet.id
+      hosts_count      = 2
+      subnet_id        = yandex_vpc_subnet.kafka_subnet.id
       assign_public_ip = false
     }
   }

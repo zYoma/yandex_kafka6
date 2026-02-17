@@ -9,27 +9,6 @@ terraform {
 
 provider "yandex" {}
 
-########################################
-# Variables
-########################################
-
-variable "folder_id" {
-  type = string
-}
-
-variable "zone" {
-  type    = string
-  default = "ru-central1-a"
-}
-
-variable "kafka_user" {
-  type = string
-}
-
-variable "kafka_password" {
-  type      = string
-  sensitive = true
-}
 
 ########################################
 # Locals

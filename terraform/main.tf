@@ -165,6 +165,16 @@ resource "yandex_vpc_security_group_rule" "dataproc_egress_all" {
   v4_cidr_blocks = ["0.0.0.0/0"]
 }
 
+resource "yandex_vpc_security_group_rule" "allow_hdfs_from_my_ip" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow HDFS RPC from my IP"
+
+  from_port      = 8020
+  to_port        = 8020
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
 
 ############################
 # Kafka Cluster

@@ -30,8 +30,3 @@ output "dataproc_cluster_id" {
   description = "DataProc cluster ID"
   value       = yandex_dataproc_cluster.hadoop_cluster.id
 }
-
-output "master_fqdn" {
-  value = yandex_dataproc_subcluster.hadoop_master[0].hosts[0].fqdn
-}
-

@@ -151,22 +151,21 @@ resource "yandex_resourcemanager_folder_iam_member" "dataproc_provisioner" {
 ############################
 
 resource "yandex_dataproc_cluster" "hadoop_cluster" {
-  name               = "hadoop-cluster"
-  folder_id          = local.folder_id
-  zone_id            = local.zone
+  name        = "hadoop-cluster"
+  folder_id   = var.folder_id
+  description = "Hadoop HDFS для интеграции с Kafka"
   service_account_id = yandex_iam_service_account.dataproc_sa.id
-
-  security_group_ids = [yandex_vpc_security_group.sg.id]
+  zone_id = var.zone
 
   cluster_config {
-    version_id = "2.1"
+    version_id = "2.1.1"
 
     hadoop {
       services = ["HDFS", "ZOOKEEPER"]
     }
 
     subcluster_spec {
-      name = "master"
+      name = "subcluster-master"
       role = "MASTERNODE"
 
       resources {
@@ -175,14 +174,15 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
         disk_size          = 100
       }
 
-      hosts_count      = 1
-      subnet_id        = yandex_vpc_subnet.subnet.id
-      ssh_public_keys  = [file("~/.ssh/terraform-dataproc.pub")]
+      hosts_count = 1
+      subnet_id   = yandex_vpc_subnet.kafka_subnet.id
       assign_public_ip = true
+
+      ssh_key = file("~/.ssh/terraform-dataproc.pub")
     }
 
     subcluster_spec {
-      name = "worker"
+      name = "subcluster-worker"
       role = "DATANODE"
 
       resources {
@@ -191,10 +191,13 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
         disk_size          = 200
       }
 
-      hosts_count      = 2
-      subnet_id        = yandex_vpc_subnet.subnet.id
-      ssh_public_keys  = [file("~/.ssh/terraform-dataproc.pub")]
+      hosts_count = 2
+      subnet_id   = yandex_vpc_subnet.kafka_subnet.id
       assign_public_ip = false
+
+      ssh_key = file("~/.ssh/terraform-dataproc.pub")
     }
   }
+
+  security_group_ids = [yandex_vpc_security_group.kafka_sg.id]
 }

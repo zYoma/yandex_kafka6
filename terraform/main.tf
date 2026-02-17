@@ -48,22 +48,13 @@ resource "yandex_vpc_security_group" "sg" {
   name       = "infra-sg"
   network_id = yandex_vpc_network.network.id
 
-  # Внутренний трафик между узлами кластера через подсеть (опционально)
+  # Внутренний трафик в пределах подсети
   ingress {
     description    = "Allow internal cluster traffic"
     protocol       = "ANY"
     from_port      = 0
     to_port        = 65535
     v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
-  }
-
-  # Внутренний трафик между узлами кластера через саму SG (обязательно)
-  ingress {
-    description       = "Allow traffic from itself"
-    protocol          = "ANY"
-    from_port         = 0
-    to_port           = 65535
-    security_group_id = yandex_vpc_security_group.sg.id
   }
 
   # SSH извне
@@ -84,6 +75,7 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 
 

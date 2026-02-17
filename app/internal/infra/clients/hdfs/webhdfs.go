@@ -26,7 +26,7 @@ type WebHDFSWriter struct {
 func NewWebHDFSWriter(cfg *HDFSWriterConfig) (*WebHDFSWriter, error) {
 	baseURL := strings.Split(cfg.Addresses, ",")[0]
 	if !strings.HasPrefix(baseURL, "http") {
-		baseURL = "http://" + baseURL + ":9870"
+		baseURL = "http://" + baseURL + ":14000"
 	}
 
 	batchSize := cfg.BatchSize

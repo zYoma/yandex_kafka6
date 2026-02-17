@@ -226,6 +226,17 @@ resource "yandex_vpc_security_group_rule" "allow_webhdfs" {
   v4_cidr_blocks = ["0.0.0.0/0"]
 }
 
+resource "yandex_vpc_security_group_rule" "allow_httpfs" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow HTTP FS"
+
+  from_port      = 14000
+  to_port        = 14001
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
+
 resource "yandex_vpc_security_group_rule" "allow_data_transfer_http" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "ingress"
@@ -364,6 +375,9 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
         "hdfs:dfs.webhdfs.enabled"                  = "true"
         "hdfs:dfs.namenode.http-address"            = "0.0.0.0:9870"
         "hdfs:dfs.webhdfs.user.provider.user.pattern" = "^[A-Za-z_][A-Za-z0-9_-]*[$]?$"
+        "hdfs:dfs.datanode.dns.interface"           = "lo"
+        "hdfs:dfs.datanode.http.address"            = "0.0.0.0:9864"
+        "hdfs:dfs.namenode.datanode.registration.ip-hostname-cache" = "false"
       }
     }
 

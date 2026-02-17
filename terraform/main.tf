@@ -126,7 +126,6 @@ resource "yandex_vpc_security_group_rule" "dataproc_internal_ingress" {
   from_port         = 0
   to_port           = 65535
   protocol          = "ANY"
-
   predefined_target = "self_security_group"
 }
 
@@ -139,31 +138,33 @@ resource "yandex_vpc_security_group_rule" "dataproc_internal_egress" {
   from_port         = 0
   to_port           = 65535
   protocol          = "ANY"
-
   predefined_target = "self_security_group"
 }
 
-# Дополнительно: доступ в интернет для обновлений / HTTPS
-resource "yandex_vpc_security_group_rule" "dataproc_egress_https" {
+# Дополнительно: весь трафик внутри подсети (например, к хранилищу)
+resource "yandex_vpc_security_group_rule" "dataproc_subnet_internal" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow internal traffic to subnet resources (HDFS, storage, etc.)"
+
+  from_port      = 0
+  to_port        = 65535
+  protocol       = "ANY"
+  v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
+}
+
+# Egress: весь трафик в интернет (обновления, доступ к S3, etc.)
+resource "yandex_vpc_security_group_rule" "dataproc_egress_all" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "egress"
-  description            = "Allow outbound HTTPS"
+  description            = "Allow all outbound traffic"
 
-  protocol     = "TCP"
-  port         = 443
+  from_port      = 0
+  to_port        = 65535
+  protocol       = "ANY"
   v4_cidr_blocks = ["0.0.0.0/0"]
 }
 
-# NTP
-resource "yandex_vpc_security_group_rule" "dataproc_egress_ntp" {
-  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
-  direction              = "egress"
-  description            = "Allow NTP for time sync"
-
-  protocol       = "UDP"
-  port           = 123
-  v4_cidr_blocks = ["0.0.0.0/0"]
-}
 
 ############################
 # Kafka Cluster

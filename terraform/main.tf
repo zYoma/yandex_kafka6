@@ -157,6 +157,7 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
   folder_id   = local.folder_id
   environment = "PRESTABLE"
   network_id  = yandex_vpc_network.network.id
+  subnet_ids  = [yandex_vpc_subnet.subnet.id] 
 
   security_group_ids = [yandex_vpc_security_group.sg.id]
 
@@ -164,6 +165,7 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
     version       = "3.9"
     brokers_count = 3
     zones         = [local.zone]
+    assign_public_ip = true
 
     kafka {
       resources {
@@ -176,7 +178,6 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
         compression_type    = "COMPRESSION_TYPE_GZIP"
         log_retention_hours = 72
       }
-      assign_public_ip = true
     }
 
     schema_registry = true

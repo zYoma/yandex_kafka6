@@ -15,11 +15,10 @@ func NewHDFSClient(cfg *config.Config) (interfaces.HDFSClient, error) {
 	}
 
 	if hdfsCfg.Addresses == "" {
-		// Если HDFS не настроен, возвращаем mock-клиент
 		return &MockHDFSWriter{}, nil
 	}
 
-	return NewHDFSWriter(hdfsCfg)
+	return NewWebHDFSWriter(hdfsCfg)
 }
 
 type MockHDFSWriter struct{}

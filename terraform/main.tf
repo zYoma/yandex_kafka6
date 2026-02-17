@@ -216,6 +216,27 @@ resource "yandex_vpc_security_group_rule" "allow_hdfs_highports" {
   v4_cidr_blocks = ["0.0.0.0/0"]
 }
 
+resource "yandex_vpc_security_group_rule" "allow_webhdfs" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow WebHDFS HTTP"
+
+  port           = 9870
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
+
+resource "yandex_vpc_security_group_rule" "allow_data_transfer_http" {
+  security_group_binding = yandex_vpc_security_group.dataproc_sg.id
+  direction              = "ingress"
+  description            = "Allow DataNode HTTP transfer"
+
+  from_port      = 50075
+  to_port        = 50076
+  protocol       = "TCP"
+  v4_cidr_blocks = ["0.0.0.0/0"]
+}
+
 resource "yandex_vpc_security_group_rule" "allow_ssh_from_my_ip" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "ingress"
@@ -336,10 +357,13 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
         file("~/.ssh/terraform-dataproc.pub")
       ]
       properties = {
-        "hdfs:dfs.namenode.kerberos.principal" = ""
-        "hdfs:dfs.data.transfer.protection"    = "authentication"
-        "hdfs:hadoop.security.authentication"   = "simple"
-        "hdfs:hadoop.security.authorization"    = "false"
+        "hdfs:dfs.namenode.kerberos.principal"      = ""
+        "hdfs:dfs.data.transfer.protection"         = "authentication"
+        "hdfs:hadoop.security.authentication"       = "simple"
+        "hdfs:hadoop.security.authorization"        = "false"
+        "hdfs:dfs.webhdfs.enabled"                  = "true"
+        "hdfs:dfs.namenode.http-address"            = "0.0.0.0:9870"
+        "hdfs:dfs.webhdfs.user.provider.user.pattern" = "^[A-Za-z_][A-Za-z0-9_-]*[$]?$"
       }
     }
 

@@ -48,6 +48,7 @@ resource "yandex_vpc_security_group" "sg" {
   name       = "infra-sg"
   network_id = yandex_vpc_network.network.id
 
+  # 1️⃣ Внутренний трафик между узлами кластера (обязательно!)
   ingress {
     description    = "Allow internal cluster traffic"
     protocol       = "ANY"
@@ -55,14 +56,8 @@ resource "yandex_vpc_security_group" "sg" {
     to_port        = 65535
     v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
   }
-  
-  ingress {
-    protocol       = "ANY"
-    from_port      = 0
-    to_port        = 65535
-    v4_cidr_blocks = ["10.0.0.0/24"]
-  }
 
+  # 2️⃣ SSH извне (опционально)
   ingress {
     protocol       = "TCP"
     description    = "SSH"
@@ -71,14 +66,16 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # 3️⃣ Kafka (внутренний трафик в подсети)
   ingress {
     protocol       = "TCP"
     description    = "Kafka SSL"
     from_port      = 9091
     to_port        = 9091
-    v4_cidr_blocks = ["10.0.0.0/24"]
+    v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
   }
 
+  # 4️⃣ Schema Registry (если нужен извне)
   ingress {
     protocol       = "TCP"
     description    = "Schema Registry"
@@ -87,6 +84,7 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Исходящий трафик разрешаем весь
   egress {
     protocol       = "ANY"
     from_port      = 0
@@ -94,6 +92,7 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 ############################
 # Kafka Cluster

@@ -26,7 +26,7 @@ type Config struct {
 	SchemaRegistryServiceURL string `env:"SCHEMA_REGISTRY_SERVICE_URL" envDefault:"http://schema-registry:8081"`
 	SingleMessageConsumer    bool   `env:"ENABLE_SINGLE_MESSAGE_CONSUMER" envDefault:"true"`
 
-	UseSSL        bool   `env:"USE_SSL" envDefault:"false"`
+	UseSSL        bool   `env:"USE_SSL" envDefault:"true"`
 	SASLUsername  string `env:"SASL_USERNAME" envDefault:"admin"`
 	SASLPassword  string `env:"SASL_PASSWORD" envDefault:""`
 	SSLCALocation string `env:"SSL_CA_LOCATION" envDefault:"/certs/ca.crt"`

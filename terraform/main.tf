@@ -192,7 +192,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
       }
 
       hosts_count = 2
-      subnet_id   = yandex_vpc_subnet.kafka_subnet.id
+      subnet_id   = yandex_vpc_subnet.subnet.id
       assign_public_ip = false
 
       ssh_key = file("~/.ssh/terraform-dataproc.pub")

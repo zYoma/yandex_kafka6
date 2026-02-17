@@ -197,6 +197,9 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
 
 
     }
+    ssh_public_keys = [
+      file("~/.ssh/terraform-dataproc.pub")
+    ]
   }
 
   security_group_ids = [yandex_vpc_security_group.sg.id]

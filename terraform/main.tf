@@ -223,7 +223,7 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
     version_id = "2.1"
 
     hadoop {
-      services = ["HDFS", "ZOOKEEPER"]
+      services = ["HDFS"]
       ssh_public_keys = [
         file("~/.ssh/terraform-dataproc.pub")
       ]

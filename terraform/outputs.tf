@@ -35,4 +35,3 @@ output "dataproc_master_ips" {
   description = "DataProc master node public IPs"
   value = yandex_dataproc_cluster.hadoop_cluster.cluster_config[0].subcluster_spec
 }
-}

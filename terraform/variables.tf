@@ -25,3 +25,8 @@ variable "ssh_public_key_path" {
   description = "Path to SSH public key"
   type        = string
 }
+
+variable "cloud_id" {
+  description = "ID облака в Yandex Cloud"
+  type        = string
+}

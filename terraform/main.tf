@@ -49,6 +49,14 @@ resource "yandex_vpc_security_group" "sg" {
   network_id = yandex_vpc_network.network.id
 
   ingress {
+    description    = "Allow internal cluster traffic"
+    protocol       = "ANY"
+    from_port      = 0
+    to_port        = 65535
+    v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
+  }
+  
+  ingress {
     protocol       = "ANY"
     from_port      = 0
     to_port        = 65535

@@ -204,9 +204,9 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
   user {
     name     = var.kafka_user
     password = var.kafka_password
-    permissions {
-      resource = "*"
-      permission = "WRITE"
+    permission {
+      topic_name = "*"
+      role       = "ACCESS_ROLE_ADMIN"
   }
   }
 }

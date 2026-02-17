@@ -34,7 +34,7 @@ func NewHDFSWriter(cfg *HDFSWriterConfig) (*HDFSWriter, error) {
 		return nil, fmt.Errorf("ошибка при создании клиента HDFS: %w", err)
 	}
 
-	err = client.MkdirAll(cfg.BasePath, 0755)
+	err = client.MkdirAll(cfg.BasePath, 0777)
 	if err != nil && !strings.Contains(err.Error(), "exists") {
 		client.Close()
 		return nil, fmt.Errorf("ошибка при создании директории %s: %w", cfg.BasePath, err)

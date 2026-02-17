@@ -100,7 +100,7 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
   security_group_ids = [yandex_vpc_security_group.sg.id]
 
   config {
-    version       = "3.5"
+    version       = "3.4"
     brokers_count = 3
     zones         = [local.zone]
 

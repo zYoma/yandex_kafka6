@@ -44,11 +44,11 @@ resource "yandex_vpc_subnet" "subnet" {
 # Security Group
 ############################
 
-# SG для Kafka
-resource "yandex_vpc_security_group" "infra_sg" {
+resource "yandex_vpc_security_group" "sg" {
   name       = "infra-sg"
   network_id = yandex_vpc_network.network.id
 
+  # внутренний трафик между узлами кластера
   ingress {
     description    = "Allow internal cluster traffic"
     protocol       = "ANY"
@@ -57,6 +57,7 @@ resource "yandex_vpc_security_group" "infra_sg" {
     v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
   }
 
+  # SSH извне (опционально)
   ingress {
     description    = "SSH"
     protocol       = "TCP"
@@ -65,6 +66,7 @@ resource "yandex_vpc_security_group" "infra_sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Исходящий трафик разрешаем весь
   egress {
     description    = "Allow all outbound"
     protocol       = "ANY"
@@ -104,7 +106,6 @@ resource "yandex_vpc_security_group" "dataproc_sg" {
   }
 }
 
-
 ############################
 # Kafka Cluster
 ############################
@@ -115,7 +116,7 @@ resource "yandex_mdb_kafka_cluster" "kafka_cluster" {
   environment = "PRESTABLE"
   network_id  = yandex_vpc_network.network.id
 
-  security_group_ids = [yandex_vpc_security_group.infra_sg.id]
+  security_group_ids = [yandex_vpc_security_group.sg.id]
 
   config {
     version       = "3.9"

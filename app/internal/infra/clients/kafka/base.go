@@ -1,10 +1,8 @@
 package kafka
 
 import (
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/confluentinc/confluent-kafka-go/schemaregistry"
 	"github.com/confluentinc/confluent-kafka-go/schemaregistry/serde"
@@ -19,21 +17,9 @@ import (
 func SchemaMigration(cfg *config.Config) (*jsSchema.Serializer, *jsSchema.Deserializer, error) {
 	var srConfig *schemaregistry.Config
 	if cfg.UseSSL {
-		caCert, err := ioutil.ReadFile("/etc/ssl/certs/YandexInternalRootCA.pem")
-		if err != nil {
-			return nil, nil, fmt.Errorf("не удалось прочитать CA: %w", err)
-		}
 
-		caCertPool := x509.NewCertPool()
-		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-			return nil, nil, fmt.Errorf("не удалось добавить CA в CertPool")
-		}
 		srConfig = schemaregistry.NewConfigWithAuthentication(cfg.SchemaRegistryServiceURL, cfg.SASLUsername, cfg.SASLPassword)
-		// путь до CA, который подписал сертификат Schema Registry
-		srConfig.SslCaLocation = "/etc/ssl/certs/YandexInternalRootCA.pem"
 
-		// если нужно отключить валидацию имен хоста
-		srConfig.SslDisableEndpointVerification = true
 	} else {
 		srConfig = schemaregistry.NewConfig(cfg.SchemaRegistryServiceURL)
 	}

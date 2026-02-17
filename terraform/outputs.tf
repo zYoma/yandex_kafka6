@@ -30,3 +30,12 @@ output "dataproc_cluster_id" {
   description = "DataProc cluster ID"
   value       = yandex_dataproc_cluster.hadoop_cluster.id
 }
+
+output "dataproc_master_ips" {
+  description = "DataProc master node public IPs"
+  value = [
+    for subcluster in yandex_dataproc_cluster.hadoop_cluster.cluster_config.subcluster_spec :
+    for host in subcluster.hosts : host.public_ip_address
+    if subcluster.role == "MASTERNODE" && subcluster.assign_public_ip
+  ]
+}

@@ -14,8 +14,6 @@ type Producer interface {
 type Consumer interface {
 	// консьюмер запускается в режиме поочередной обработки сообщений
 	StartBatchMessage(ctx context.Context) error
-	// консьюмер запускается в режиме пакетной обработки сообщений
-	StartSingleMessage(ctx context.Context) error
 }
 
 // Product представляет продукт для записи в HDFS

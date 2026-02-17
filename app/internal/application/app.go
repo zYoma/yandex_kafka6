@@ -62,8 +62,6 @@ func (p *ProducerApp) Run(ctx context.Context) error {
 
 func (c *ConsumerApp) Run(ctx context.Context) error {
 	logger.Get().Sugar().Infof("run consumer, group_id: %v, topic: %v, hdfs_enabled=%v", c.Config.GroupId, c.Config.Topic, c.HDFSClient != nil)
-	if c.Config.SingleMessageConsumer == true {
-		return c.Consumer.StartSingleMessage(ctx)
-	}
+
 	return c.Consumer.StartBatchMessage(ctx)
 }

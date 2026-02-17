@@ -25,7 +25,10 @@ type HDFSWriterConfig struct {
 }
 
 func NewHDFSWriter(cfg *HDFSWriterConfig) (*HDFSWriter, error) {
-	client, err := hdfs.New(cfg.Addresses)
+	client, err := hdfs.NewClient(hdfs.ClientOptions{
+		Addresses: strings.Split(cfg.Addresses, ","),
+		User:      "hadoop", // <- здесь указываем существующего пользователя HDFS
+	})
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при создании клиента HDFS: %w", err)
 	}

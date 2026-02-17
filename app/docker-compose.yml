@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: Dockerfile
       network: host
-    command: ["/app/yandex-kafka-consumer consumer"]
+    command: ["/app/yandex-kafka-consumer"]
     env_file: ./.env
     environment:
       - GROUP_ID=test-group

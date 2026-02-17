@@ -54,49 +54,6 @@ func (c *KafkaConsumer) SetHDFSClient(client interfaces.HDFSClient) {
 	c.HDFSClient = client
 }
 
-// Start запускает консьюмер в SingleMessage режиме.
-func (c *KafkaConsumer) StartSingleMessage(ctx context.Context) error {
-	defer c.Consumer.Close()
-
-	// Подписываемся на топики
-	err := c.Subscribe()
-	if err != nil {
-		return err
-	}
-
-	// Запускаем бесконечный цикл
-	for {
-		select {
-		case <-ctx.Done():
-			return application.ErrAppStopped
-
-		default:
-
-			// Делаем запрос на считывание сообщения из брокера
-			msg, err := c.Consumer.ReadMessage(timeoutMs)
-			if err != nil {
-				if kafkaErr, ok := err.(kafka.Error); !ok || !kafkaErr.IsTimeout() {
-					logger.Get().Sugar().Infof("Consumer error: %v\n", err)
-				}
-				continue
-			}
-
-			// Десериализация сообщения
-			var product domain.Product
-			err = c.deserializeMessage(msg, &product)
-			if err != nil {
-				continue
-			}
-
-			logger.Get().Sugar().Infof("Got message: %+v", product)
-
-			// тут будет обработка сообщения
-
-		}
-	}
-
-}
-
 // Десериализация сообщения
 func (c *KafkaConsumer) deserializeMessage(msg *kafka.Message, data interface{}) error {
 	err := c.Deserializer.DeserializeInto(c.Config.Topic, msg.Value, data)
@@ -267,8 +224,10 @@ func (c *KafkaConsumer) processPartition(ctx context.Context, tp kafka.TopicPart
 	case success := <-done:
 		if success {
 			// Если обработка успешна, коммитит сообщения.
+			logger.Get().Sugar().Infof("success")
 			return c.commitPartition(tp, lastOffset)
 		} else {
+			logger.Get().Sugar().Infof("fail")
 			// Иначе - возвращаем весь батч на повторную обработку
 			return c.rollbackPartition(tp, firstOffset)
 		}

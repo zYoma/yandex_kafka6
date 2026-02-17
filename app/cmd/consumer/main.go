@@ -34,8 +34,7 @@ func main() {
 
 	hdfsClient, err := hdfs.NewHDFSClient(config)
 	if err != nil {
-		logger.Get().Sugar().Warnf("Не удалось создать HDFS клиент: %v. Продолжаем без HDFS.", err)
-		hdfsClient = nil
+		panic(err)
 	}
 
 	consumerClient.SetHDFSClient(hdfsClient)

@@ -44,11 +44,11 @@ resource "yandex_vpc_subnet" "subnet" {
 # Security Group
 ############################
 
-resource "yandex_vpc_security_group" "sg" {
-  name       = "infra-sg"
+resource "yandex_vpc_security_group" "dataproc_sg" {
+  name       = "dataproc-sg"
   network_id = yandex_vpc_network.network.id
 
-  # Внутренний трафик в пределах подсети
+  # Внутренний трафик между узлами DataProc
   ingress {
     description    = "Allow internal cluster traffic"
     protocol       = "ANY"
@@ -57,7 +57,7 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = [yandex_vpc_subnet.subnet.v4_cidr_blocks[0]]
   }
 
-  # SSH извне
+  # SSH (опционально)
   ingress {
     description    = "SSH"
     protocol       = "TCP"
@@ -66,7 +66,6 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Исходящий трафик
   egress {
     description    = "Allow all outbound"
     protocol       = "ANY"
@@ -75,7 +74,6 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
 
 
 
@@ -194,5 +192,5 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
     }
   }
 
-  security_group_ids = [yandex_vpc_security_group.sg.id]
+  security_group_ids = [yandex_vpc_security_group.dataproc_sg.id]
 }

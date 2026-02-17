@@ -108,27 +108,25 @@ resource "yandex_vpc_security_group_rule" "dataproc_internal_egress" {
   predefined_target      = "self_security_group"
 }
 
-# дополнительное правило, чтобы кластер мог обращаться в интернет
+# правило для исходящего HTTPS
 resource "yandex_vpc_security_group_rule" "dataproc_egress_https" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "egress"
   description            = "Allow outbound HTTPS"
-  
-  from_port              = 443
-  to_port                = 443
+
   protocol               = "TCP"
+  port                   = 443
   v4_cidr_blocks         = ["0.0.0.0/0"]
 }
 
-# правило для NTP (time sync)
+# правило для исходящего NTP
 resource "yandex_vpc_security_group_rule" "dataproc_egress_ntp" {
   security_group_binding = yandex_vpc_security_group.dataproc_sg.id
   direction              = "egress"
   description            = "Allow NTP for time sync"
 
-  from_port              = 123
-  to_port                = 123
   protocol               = "UDP"
+  port                   = 123
   v4_cidr_blocks         = ["0.0.0.0/0"]
 }
 

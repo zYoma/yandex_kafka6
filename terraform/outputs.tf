@@ -30,3 +30,7 @@ output "dataproc_cluster_id" {
   description = "DataProc cluster ID"
   value       = yandex_dataproc_cluster.hadoop_cluster.id
 }
+
+output "master_public_ip" {
+  value = yandex_dataproc_cluster.hadoop_cluster.master_public_ip
+}

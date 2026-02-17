@@ -294,6 +294,12 @@ resource "yandex_dataproc_cluster" "hadoop_cluster" {
       ssh_public_keys = [
         file("~/.ssh/terraform-dataproc.pub")
       ]
+      properties = {
+        "dfs.namenode.kerberos.principal" = ""
+        "dfs.data.transfer.protection"    = "authentication"
+        "hadoop.security.authentication"   = "simple"
+        "hadoop.security.authorization"    = "false"
+      }
     }
 
     subcluster_spec {

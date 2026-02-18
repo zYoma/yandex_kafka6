@@ -12,13 +12,45 @@
 
 ```
 Producer -> Kafka (JSON Schema Registry) -> Consumer -> HDFS
-                |
-                v
-         Yandex Managed Kafka
-                |
-                v
-         DataProc (HDFS)
+                 |
+                 v
+          Yandex Managed Kafka
+                 |
+                 v
+          DataProc (HDFS)
 ```
+
+## Инфраструктура
+
+### Network
+- **VPC**: infra-network
+- **Subnet**: 10.0.0.0/24
+- **NAT Gateway**: nat-gateway для доступа в интернет
+
+### Kafka Cluster
+- **Версия**: 3.9 (PRESTABLE)
+- **Брокеры**: 3 узла (s3-c2-m8: 2 CPU, 8 GB RAM, 100 GB)
+- **Порты**: 9091 (SASL_SSL), 443 (Schema Registry HTTPS)
+- **Публичный IP**: да
+
+### DataProc Cluster
+- **Версия**: 2.1
+- **MASTERNODE**: 1 узел (s3-c2-m8, 50 GB)
+- **DATANODE**: 2 узла (s3-c2-m8, 50 GB)
+- **Сервисы**: HDFS
+- **Публичный IP**: да на всех узлах
+- **Порты HDFS**:
+  - 8020, 9000: NameNode RPC
+  - 9870: NameNode Web UI
+  - 50010: DataNode transfer
+  - 50020: DataNode IPC
+  - 50000-51000: High ports for transfer
+  - 14000-14001: HTTP FS
+  - 50075-50076: DataNode HTTP transfer
+
+### Security Groups
+- **infra-sg**: Kafka (9091, 443), SSH (22)
+- **dataproc-sg**: HDFS порты, SSH (22), внутренний трафик
 
 ## Структура проекта
 
@@ -46,7 +78,7 @@ app/
 ### 1. Развернуть инфраструктуру в Yandex Cloud
 
 ```bash
-cd /Users/user/GoProjects/yandex_kafka_6
+cd terraform
 terraform init
 terraform apply
 ```
@@ -55,13 +87,14 @@ terraform apply
 
 ```bash
 # Kafka bootstrap servers
-terraform output kafka_bootstrap_servers
+terraform output kafka_hosts
 
-# Schema Registry URL
-terraform output schema_registry_url
+# Schema Registry URLs
+terraform output schema_registry_urls
 
 # DataProc кластера
 terraform output dataproc_cluster_id
+terraform output dataproc_master_ips
 ```
 
 ### 3. Скачать CA сертификат
@@ -75,9 +108,10 @@ terraform output dataproc_cluster_id
 cd app
 cp .env.example .env
 # Отредактировать:
-# BOOTSTRAP_SERVER=<хосты_кафка>
-# SCHEMA_REGISTRY_SERVICE_URL=https://<schema_registry_host>
+# BOOTSTRAP_SERVER=<terraform output kafka_hosts>
+# SCHEMA_REGISTRY_SERVICE_URL=<terraform output schema_registry_urls | head -1>
 # SASL_PASSWORD=<ваш_пароль>
+# HDFS_ADDRESSES=<terraform output dataproc_master_ips>
 ```
 
 ### 5. Запуск продюсера
@@ -116,32 +150,32 @@ go run cmd/consumer/main.go
 ### Переменные окружения для HDFS:
 
 ```
-HADOOP_HDFS_MODE=false          # true - использовать настоящий HDFS
-HDFS_ADDRESSES=namenode:9000    # Адрес NameNode (для локального тестирования)
+HADOOP_HDFS_MODE=true           # true - использовать настоящий HDFS, false - локальный stub
+HDFS_ADDRESSES=<dataproc_master_ips>  # Публичный IP DataProc
 HDFS_KAFKA_DATA_PATH=/kafka_data # Путь в HDFS для данных
-DATAPROC_MASTER_HOST=           # Хост DataProc (если доступен)
 ```
 
-### Для реального подключения к DataProc HDFS:
+### Подключение к DataProc HDFS
 
-Так как DataProc кластер в Yandex Cloud не имеет публичного NameNode, используйте:
+Так как DataProc кластер в Yandex Cloud имеет публичные IP на всех узлах, подключение возможно напрямую:
 
-#### Вариант 1: Через SSH туннель (из консьюмера на VM)
 ```bash
-# На VM запустить SSH tunnel к DataProc
-ssh -i ~/.ssh/yandex_cloud -L 9000:<namenode_internal>:8020 \
-  ubuntu@<dataproc_master_public_ip>
+# Получить публичный IP мастер-ноды
+terraform output dataproc_master_ips
 
-# В HDFS_ADDRESSES указать localhost:9000
-```
-
-#### Вариант 2: Через yc dataproc ssh (ручная проверка)
-```bash
-yc dataproc ssh <cluster-id> --host <hostname> --ssh-key ~/.ssh/yandex_cloud
+# Подключение по SSH
+ssh -i ~/.ssh/yandex_cloud ubuntu@<dataproc_master_public_ip>
 
 # Then inside HDFS
 hdfs dfs -ls /kafka_data
 hdfs dfs -cat /kafka_data/products_batch_*
+```
+
+### Web UI для мониторинга HDFS
+
+```bash
+# NameNode Web UI
+http://<dataproc_master_public_ip>:9870
 ```
 
 ## Скриншоты для отчета
@@ -150,11 +184,12 @@ hdfs dfs -cat /kafka_data/products_batch_*
 
 ```bash
 # Регистрация схемы
-curl -u admin:<password> -k https://<schema_registry_url>/subjects
+SCHEMA_URL=$(terraform output -raw schema_registry_urls | head -1)
+curl -u admin:<password> -k $SCHEMA_URL/subjects
 
 # Детали схемы
 curl -X GET -u admin:<password> -k \
-  https://<schema_registry_url>/subjects/test-topic-value/versions/latest
+  $SCHEMA_URL/subjects/test-topic-value/versions/latest
 
 # Описание топика
 yc managed-kafka topic list --cluster-name kafka-cluster
@@ -168,10 +203,14 @@ yc dataproc cluster list
 yc dataproc cluster get <cluster-id>
 
 # Проверка данных в HDFS (через SSH на мастер-ноду)
-yc dataproc ssh <cluster-id> --host <namenode> --ssh-key ~/.ssh/yandex_cloud
+terraform output dataproc_master_ips
+ssh -i ~/.ssh/yandex_cloud ubuntu@<dataproc_master_public_ip>
 
 hdfs dfs -ls /kafka_data
 hdfs dfs -cat /kafka_data/products_batch_*
+
+# NameNode Web UI
+# Открыть в браузере: http://<dataproc_master_public_ip>:9870
 
 # Логи консьюмера
 docker-compose logs consumer
@@ -195,3 +234,22 @@ CSV формат:
 - `infra/clients/hdfs/client.go`: Реализация HDFS клиента
 - `infra/clients/kafka/consumer.go`: processPartition() - чтение из Kafka
 - `interfaces/interfaces.go`: HDFSClient интерфейс
+
+## Конфигурация Security Groups
+
+### Kafka (infra-sg)
+- 9091: Kafka SASL_SSL
+- 443: Schema Registry HTTPS
+- 22: SSH
+- 0-65535: Внутренний трафик кластера
+
+### DataProc (dataproc-sg)
+- 8020, 9000: HDFS NameNode RPC
+- 9870: HDFS NameNode Web UI
+- 50010: HDFS DataNode transfer
+- 50020: HDFS DataNode IPC
+- 50000-51000: HDFS high ports for data transfer
+- 14000-14001: HTTP FS
+- 50075-50076: DataNode HTTP transfer
+- 22: SSH
+- 0-65535: Внутренний трафик SG

@@ -1,0 +1,32 @@
+
+services:
+  
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    command: ["/app/yandex-kafka"]
+    env_file: ./.env
+    networks:
+      - kafka-network
+    volumes:
+      - /etc/ssl/certs/YandexInternalRootCA.pem:/etc/ssl/certs/YandexInternalRootCA.pem:ro
+  
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    command: ["/app/yandex-kafka-consumer"]
+    env_file: ./.env
+    environment:
+      - GROUP_ID=test-group
+    networks:
+      - kafka-network
+    volumes:
+      - /etc/ssl/certs/YandexInternalRootCA.pem:/etc/ssl/certs/YandexInternalRootCA.pem:ro
+
+networks:
+  kafka-network:
+    driver: bridge
